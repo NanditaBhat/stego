@@ -1,0 +1,99 @@
+from PIL import Image
+
+# Function to convert text to binary
+def text_to_binary(text):
+    binary_message = ''.join(format(ord(char), '08b') for char in text)
+    return binary_message
+
+# Function to hide a message in an image
+def hide_message_in_image(image_path, message, output_path):
+    # Open the image
+    img = Image.open("image.jpg")
+
+    # Convert the message to binary
+    binary_message = text_to_binary(message)
+
+    # Check if the message is too long to hide in the image
+    if len(binary_message) > img.width * img.height:
+        print("Message is too long to hide in the image.")
+        return
+
+    # Iterate through the pixels and hide the message in the least significant bits
+    binary_message += '1111111111111110'  # Adding a sentinel value to mark the end of the message
+    data_index = 0
+
+    img_data = img.load()
+    for x in range(img.width):
+        for y in range(img.height):
+            pixel = list(img_data[x, y])
+            for color_channel in range(3):  # R, G, B channels
+                if data_index < len(binary_message):
+                    pixel[color_channel] = int(format(pixel[color_channel], '08b')[:-1] + binary_message[data_index], 2)
+                    data_index += 1
+            img_data[x, y] = tuple(pixel)
+
+    # Save the modified image
+    img.save(output_path)
+    print("Message hidden successfully.")
+def find_key(key):
+    key= str('hide')
+    keycode=input("enter the key")
+    if key==keycode:
+        print("key matched")
+    else:
+        print("key not matched")
+        exit()
+# Function to extract a message from an image
+def extract_message_from_image(image_path):
+    # Open the stego image
+    img = Image.open(image_path)
+
+    binary_message = ""
+    img_data = img.load()
+
+    for x in range(img.width):
+        for y in range(img.height):
+            pixel = list(img_data[x, y])
+            for color_channel in range(3):  # R, G, B channels
+                binary_message += format(pixel[color_channel], '08b')[-1]
+
+    # Find the index of the sentinel value to extract the message
+    end_index = binary_message.find('1111111111111110')
+    if end_index != -1:
+        binary_message = binary_message[:end_index]
+
+    # Convert the binary message back to text
+    message = ""
+    for i in range(0, len(binary_message), 8):
+        byte = binary_message[i:i+8]
+        message += chr(int(byte, 2))
+
+    return message
+def main():
+    global message
+    image_path = "image.jpg"
+    output_path = "stego_image.jpg"
+    while(True):
+        a=int(input("enter your choice "
+                    "1: Encode "
+                    "2: Decode "
+                    "3: Exit "))
+        if(a==1):
+            print("you have selected to encode")
+            message = input("please enter the secret message")
+            hide_message_in_image(image_path, message, output_path)
+
+    # Hide the message in the image
+        if(a==2):
+            print("you have selected to decode")
+            message = str("secret message")
+            find_key("hide")
+            extracted_message = extract_message_from_image(output_path)
+            print("Extracted Message:", extracted_message)
+            print("the secret message was:",message)
+
+        if(a==3):
+            exit()
+        # Extract the hidden message from the image
+
+main()
